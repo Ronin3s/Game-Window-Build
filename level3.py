@@ -254,7 +254,7 @@ class Level3:
         self.screen.blit(self.background, (0, 0))
         
         # Draw title
-        draw_text(self.screen, "أكمل صور المركبات", 36, self.width // 2, 40, (80, 80, 80))
+        draw_text(self.screen, "Complete the Vehicle Puzzles", 36, self.width // 2, 40, (80, 80, 80))
         
         # Draw puzzle slots
         for slot in self.puzzle_slots:
@@ -279,8 +279,8 @@ class Level3:
             overlay.fill((0, 0, 0, 100))
             self.screen.blit(overlay, (0, 0))
             
-            draw_text(self.screen, "تهانينا!", 84, self.width // 2, self.height // 2 - 80, (255, 215, 0))
-            draw_text(self.screen, "أنهيت كل المراحل!", 48, self.width // 2, self.height // 2, (255, 255, 255))
+            draw_text(self.screen, "Congratulations!", 84, self.width // 2, self.height // 2 - 80, (255, 215, 0))
+            draw_text(self.screen, "You finished all levels!", 48, self.width // 2, self.height // 2, (255, 255, 255))
             
             # Draw big stars
             for i in range(7):

@@ -26,7 +26,7 @@ class StartScreen:
         self.button_height = 80
         self.button_x = (self.width - self.button_width) // 2
         self.button_y = (self.height - self.button_height) // 2 + 100
-        self.button = create_button("ابدأ اللعبة", 0, 0, self.button_width, self.button_height, (50, 200, 50))
+        self.button = create_button("Start Game", 0, 0, self.button_width, self.button_height, (50, 200, 50))
         self.button_rect = pygame.Rect(self.button_x, self.button_y, self.button_width, self.button_height)
         
         # Hover effect
@@ -48,8 +48,8 @@ class StartScreen:
         self.screen.blit(self.background, (0, 0))
         
         # Draw title
-        draw_text(self.screen, "مغامرة المواصلات", 72, self.width // 2, 150, (255, 255, 255))
-        draw_text(self.screen, "طابق، تعلم، والعب!", 36, self.width // 2, 220, (255, 255, 150))
+        draw_text(self.screen, "Transport Adventure", 72, self.width // 2, 150, (255, 255, 255))
+        draw_text(self.screen, "Match, Learn, and Play!", 36, self.width // 2, 220, (255, 255, 150))
         
         # Draw button with hover effect
         if self.button_hover:

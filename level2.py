@@ -67,11 +67,11 @@ class Level2:
         
         self.zones = [
             EnvironmentZone("AIR", pygame.Rect(50, zone_y, zone_width, zone_height), 
-                          (173, 216, 230), ["plane", "helicopter"], max_vehicles=2, display_name="جو"),
+                          (173, 216, 230), ["plane", "helicopter"], max_vehicles=2, display_name="Air"),
             EnvironmentZone("LAND", pygame.Rect(370, zone_y, zone_width, zone_height),
-                          (144, 238, 144), ["car", "bike", "bus", "train"], max_vehicles=4, display_name="بر"),
+                          (144, 238, 144), ["car", "bike", "bus", "train"], max_vehicles=4, display_name="Land"),
             EnvironmentZone("SEA", pygame.Rect(690, zone_y, zone_width, zone_height),
-                          (135, 206, 250), ["boat", "ship"], max_vehicles=2, display_name="بحر")
+                          (135, 206, 250), ["boat", "ship"], max_vehicles=2, display_name="Sea")
         ]
         
         # ... (rest of init) ...
@@ -83,7 +83,7 @@ class Level2:
         self.screen.blit(self.background, (0, 0))
         
         # Draw title
-        draw_text(self.screen, "رتب المركبات في بيئاتها", 48, self.width // 2, 50, (80, 80, 80))
+        draw_text(self.screen, "Sort Vehicles to their Environments", 48, self.width // 2, 50, (80, 80, 80))
         
         # Draw zones
         for zone in self.zones:
@@ -103,7 +103,7 @@ class Level2:
         
         # Draw completion message
         if self.completed:
-            draw_text(self.screen, "ممتاز!", 72, self.width // 2, self.height // 2, (255, 215, 0))
+            draw_text(self.screen, "Excellent!", 72, self.width // 2, self.height // 2, (255, 215, 0))
 
 class DraggableVehicle2:
     """A vehicle that can be dragged to environment zones"""
@@ -175,11 +175,11 @@ class Level2:
         
         self.zones = [
             EnvironmentZone("AIR", pygame.Rect(50, zone_y, zone_width, zone_height), 
-                          (173, 216, 230), ["plane", "helicopter"], max_vehicles=2, display_name="جو"),
+                          (173, 216, 230), ["plane", "helicopter"], max_vehicles=2, display_name="Air"),
             EnvironmentZone("LAND", pygame.Rect(370, zone_y, zone_width, zone_height),
-                          (144, 238, 144), ["car", "bike", "bus", "train"], max_vehicles=4, display_name="بر"),
+                          (144, 238, 144), ["car", "bike", "bus", "train"], max_vehicles=4, display_name="Land"),
             EnvironmentZone("SEA", pygame.Rect(690, zone_y, zone_width, zone_height),
-                          (135, 206, 250), ["boat", "ship"], max_vehicles=2, display_name="بحر")
+                          (135, 206, 250), ["boat", "ship"], max_vehicles=2, display_name="Sea")
         ]
         
         # Create vehicles
@@ -306,7 +306,7 @@ class Level2:
         self.screen.blit(self.background, (0, 0))
         
         # Draw title
-        draw_text(self.screen, "رتب المركبات في بيئاتها", 48, self.width // 2, 50, (80, 80, 80))
+        draw_text(self.screen, "Sort Vehicles to their Environments", 48, self.width // 2, 50, (80, 80, 80))
         
         # Draw zones
         for zone in self.zones:
@@ -322,7 +322,7 @@ class Level2:
         
         # Draw completion message
         if self.completed:
-            draw_text(self.screen, "ممتاز!", 72, self.width // 2, self.height // 2 - 100, (255, 215, 0))
+            draw_text(self.screen, "Excellent!", 72, self.width // 2, self.height // 2 - 100, (255, 215, 0))
             for i in range(5):
                 x = self.width // 2 - 100 + i * 50
                 y = self.height // 2 - 30

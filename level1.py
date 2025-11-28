@@ -218,7 +218,7 @@ class Level1:
         self.screen.blit(self.background, (0, 0))
         
         # Draw title
-        draw_text(self.screen, "طابق المركبات مع ظلالها", 36, self.width // 2, 50, (80, 80, 80))
+        draw_text(self.screen, "Match Vehicles with their Shadows", 36, self.width // 2, 50, (80, 80, 80))
         
         # Draw shadows
         for shadow in self.shadows:
@@ -234,7 +234,7 @@ class Level1:
         
         # Draw completion message
         if self.completed:
-            draw_text(self.screen, "أحسنت!", 72, self.width // 2, self.height // 2, (255, 215, 0))
+            draw_text(self.screen, "Well Done!", 72, self.width // 2, self.height // 2, (255, 215, 0))
             # Draw stars
             for i in range(5):
                 x = self.width // 2 - 100 + i * 50
