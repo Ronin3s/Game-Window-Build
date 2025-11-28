@@ -4,7 +4,7 @@ Players match vehicle halves to complete the images
 """
 import pygame
 import random
-from utils import SparkleEffect, ShakeAnimation, ConfettiEffect, create_vehicle_image, draw_text, resource_path
+from utils import SparkleEffect, ShakeAnimation, ConfettiEffect, create_vehicle_image, draw_text, resource_path, load_sound, create_button
 
 class VehicleHalf:
     """Half of a vehicle image that can be dragged"""
@@ -86,13 +86,9 @@ class Level3:
         self.error_sound = error_sound
         self.complete_sound = complete_sound
         
-        # Load background
-        try:
-            self.background = pygame.image.load(resource_path('assets/images/level3_bg.png'))
-            self.background = pygame.transform.scale(self.background, (self.width, self.height))
-        except:
-            self.background = pygame.Surface((self.width, self.height))
-            self.background.fill((198, 236, 198))  # Pastel green
+        # Load background - Solid pastel color as requested
+        self.background = pygame.Surface((self.width, self.height))
+        self.background.fill((198, 236, 198))  # Pastel green
         
         # Vehicle data
         vehicle_data = [
@@ -109,31 +105,41 @@ class Level3:
         self.puzzle_slots = []
         self.draggable_halves = []
         
+        # Increase size for kids view (was 150, now 200)
+        full_size = 200
+        half_width = full_size // 2
+        
         # Create split vehicles
         for i, (vtype, color) in enumerate(vehicle_data):
             # Create full vehicle (larger size)
-            full_vehicle = create_vehicle_image(vtype, color, (150, 150))
+            full_vehicle = create_vehicle_image(vtype, color, (full_size, full_size))
             
             # Split into halves
-            left_half = pygame.Surface((75, 150), pygame.SRCALPHA)
-            right_half = pygame.Surface((75, 150), pygame.SRCALPHA)
+            left_half = pygame.Surface((half_width, full_size), pygame.SRCALPHA)
+            right_half = pygame.Surface((half_width, full_size), pygame.SRCALPHA)
             
-            left_half.blit(full_vehicle, (0, 0), (0, 0, 75, 150))
-            right_half.blit(full_vehicle, (0, 0), (75, 0, 75, 150))
+            left_half.blit(full_vehicle, (0, 0), (0, 0, half_width, full_size))
+            right_half.blit(full_vehicle, (0, 0), (half_width, 0, half_width, full_size))
             
-            # Position slots on left side (adjusted for 1024x768)
+            # Position slots on left side (adjusted for 1280x800)
+            # 8 items total. Use 4 rows x 2 columns
             row = i // 2
             col = i % 2
-            slot_x = 100 + col * 250
-            slot_y = 150 + row * 160
+            # Increase spacing for 200px height
+            slot_x = 100 + col * 280
+            slot_y = 50 + row * 190 # 4 rows: 50, 240, 430, 620
             
             # Create puzzle slot with left half (fixed)
             slot = PuzzleSlot(left_half, slot_x, slot_y, i)
             self.puzzle_slots.append(slot)
             
-            # Create draggable right half
-            half_x = 600 + (i % 4) * 100
-            half_y = 150 + (i // 4) * 180
+            # Create draggable right half on right side
+            # Mirror the left side layout
+            d_row = i // 2
+            d_col = i % 2
+            half_x = 800 + d_col * 280
+            half_y = 50 + d_row * 190
+            
             draggable = VehicleHalf(right_half, half_x, half_y, i, False)
             self.draggable_halves.append(draggable)
         
@@ -150,11 +156,34 @@ class Level3:
         self.total_matches = len(self.puzzle_slots)
         self.completed = False
         self.completion_timer = 0
+        self.completion_timer = 0
         self.confetti = None
+        
+        # Load specific level complete sound
+        self.level_complete_sound = load_sound(resource_path('assets/sounds/level3_complete.wav'))
+            
+        # Success Screen Elements (Arabic Images)
+        from utils import load_arabic_image
+        
+        # Note: Using "Start-game.png" for Dashboard button as we don't have a specific Dashboard image
+        self.next_button = load_arabic_image('Start-game.png', (200, 80))
+        if not self.next_button:
+            self.next_button = create_button("Dashboard", 0, 0, 200, 80, (50, 200, 50), font_size=30)
+        self.next_button_rect = pygame.Rect((self.width - 200) // 2, self.height // 2 + 150, 200, 80)
+
+        self.restart_button = load_arabic_image('try-agin.png', (200, 80))
+        if not self.restart_button:
+            self.restart_button = create_button("Restart", 0, 0, 200, 80, (200, 50, 50), font_size=30)
+        self.restart_button_rect = pygame.Rect((self.width - 200) // 2, self.height // 2 + 250, 200, 80)
     
     def handle_event(self, event):
         """Handle mouse events"""
         if self.completed:
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if self.next_button_rect.collidepoint(event.pos):
+                    return True
+                elif self.restart_button_rect.collidepoint(event.pos):
+                    return "restart"
             return False
         
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -239,13 +268,13 @@ class Level3:
         if self.matches_found >= self.total_matches and not self.completed:
             self.completed = True
             self.completion_timer = pygame.time.get_ticks()
-            if self.complete_sound:
-                self.complete_sound.play()
+            if self.level_complete_sound:
+                self.level_complete_sound.play()
             # Create confetti effect
             self.confetti = ConfettiEffect(self.width, self.height)
         
-        if self.completed and pygame.time.get_ticks() - self.completion_timer > 3000:
-            return True
+        # if self.completed and pygame.time.get_ticks() - self.completion_timer > 3000:
+        #     return True
         
         return False
     
@@ -273,23 +302,15 @@ class Level3:
             self.confetti.draw(self.screen)
         
         # Draw completion message
+        # Draw completion message
         if self.completed:
             # Draw semi-transparent overlay
             overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
-            overlay.fill((0, 0, 0, 100))
+            overlay.fill((0, 0, 0, 150))
             self.screen.blit(overlay, (0, 0))
             
-            draw_text(self.screen, "Congratulations!", 84, self.width // 2, self.height // 2 - 80, (255, 215, 0))
-            draw_text(self.screen, "You finished all levels!", 48, self.width // 2, self.height // 2, (255, 255, 255))
+            draw_text(self.screen, "Level 3 Complete!", 60, self.width // 2, self.height // 2 - 50, (50, 200, 50))
+            draw_text(self.screen, "Puzzle Solved!", 40, self.width // 2, self.height // 2 + 20, (255, 215, 0))
             
-            # Draw big stars
-            for i in range(7):
-                x = self.width // 2 - 150 + i * 50
-                y = self.height // 2 + 80
-                size = 20 if i % 2 == 0 else 15
-                pygame.draw.polygon(self.screen, (255, 215, 0), [
-                    (x, y - size), (x + size//3, y), (x + size, y),
-                    (x + size//2, y + size//2), (x + size*2//3, y + size),
-                    (x, y + size*2//3), (x - size*2//3, y + size),
-                    (x - size//2, y + size//2), (x - size, y), (x - size//3, y)
-                ])
+            self.screen.blit(self.next_button, self.next_button_rect)
+            self.screen.blit(self.restart_button, self.restart_button_rect)

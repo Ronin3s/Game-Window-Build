@@ -122,6 +122,26 @@ def load_sound(filename):
     except:
         return None
 
+def load_arabic_image(image_name, default_size=None):
+    """Load an Arabic UI image from assets/arabic-image folder
+    
+    Args:
+        image_name: Name of the image file (e.g., 'Start-game.png')
+        default_size: Optional tuple (width, height) to scale the image
+    
+    Returns:
+        Scaled pygame Surface or None if image not found
+    """
+    try:
+        image_path = resource_path(f'assets/arabic-image/{image_name}')
+        image = pygame.image.load(image_path)
+        if default_size:
+            image = pygame.transform.scale(image, default_size)
+        return image
+    except:
+        print(f"Warning: Arabic image '{image_name}' not found")
+        return None
+
 def play_sound(sound):
     """Play a sound if it exists"""
     if sound:
@@ -222,28 +242,122 @@ def create_shadow(image, vehicle_type=None):
             except:
                 pass
 
-    shadow = pygame.Surface(image.get_size(), pygame.SRCALPHA)
-    # Don't fill with background color - keep transparent!
-    
-    # Create a silhouette by checking alpha
-    # Lock surfaces for faster pixel access
+    # Create silhouette using mask (cleaner and faster than pixel iteration)
     try:
-        image.lock()
-        shadow.lock()
-        for x in range(image.get_width()):
-            for y in range(image.get_height()):
-                if image.get_at((x, y)).a > 50:  # Threshold for transparency
-                    shadow.set_at((x, y), (0, 0, 0, 100))  # Black semi-transparent shadow
-        image.unlock()
-        shadow.unlock()
+        mask = pygame.mask.from_surface(image)
+        # Create a surface from the mask, setting set bits to black with alpha
+        shadow = mask.to_surface(setcolor=(0, 0, 0, 100), unsetcolor=(0, 0, 0, 0))
+        return shadow
     except:
-        # Fallback if locking fails
-        for x in range(image.get_width()):
-            for y in range(image.get_height()):
-                if image.get_at((x, y)).a > 50:
-                    shadow.set_at((x, y), (0, 0, 0, 100))
-    return shadow
+        # Fallback if mask fails
+        return pygame.Surface(image.get_size(), pygame.SRCALPHA)
 
+def create_vehicle_image(vtype, color, size):
+    """Create a simple vehicle image surface with transparent background"""
+    surface = pygame.Surface(size, pygame.SRCALPHA)
+    # No fill needed, or fill with (0,0,0,0) which is default for SRCALPHA
+    
+    width, height = size
+    
+    # Draw based on type
+    if vtype == "car":
+        # Car body
+        pygame.draw.rect(surface, color, (width*0.1, height*0.4, width*0.8, height*0.4), border_radius=10)
+        # Roof
+        pygame.draw.rect(surface, color, (width*0.2, height*0.2, width*0.6, height*0.3), border_radius=5)
+        # Wheels
+        pygame.draw.circle(surface, (50, 50, 50), (int(width*0.25), int(height*0.8)), int(width*0.12))
+        pygame.draw.circle(surface, (50, 50, 50), (int(width*0.75), int(height*0.8)), int(width*0.12))
+        
+    elif vtype == "bus":
+        # Bus body
+        pygame.draw.rect(surface, color, (width*0.1, height*0.2, width*0.8, height*0.6), border_radius=5)
+        # Windows
+        for i in range(3):
+            pygame.draw.rect(surface, (200, 240, 255), (width*(0.15 + i*0.25), height*0.3, width*0.2, height*0.2))
+        # Wheels
+        pygame.draw.circle(surface, (50, 50, 50), (int(width*0.25), int(height*0.8)), int(width*0.12))
+        pygame.draw.circle(surface, (50, 50, 50), (int(width*0.75), int(height*0.8)), int(width*0.12))
+        
+    elif vtype == "truck":
+        # Cab
+        pygame.draw.rect(surface, color, (width*0.7, height*0.4, width*0.2, height*0.4), border_radius=5)
+        # Trailer
+        pygame.draw.rect(surface, (max(0, color[0]-50), max(0, color[1]-50), max(0, color[2]-50)), 
+                         (width*0.1, height*0.2, width*0.55, height*0.6))
+        # Wheels
+        pygame.draw.circle(surface, (50, 50, 50), (int(width*0.2), int(height*0.8)), int(width*0.12))
+        pygame.draw.circle(surface, (50, 50, 50), (int(width*0.5), int(height*0.8)), int(width*0.12))
+        pygame.draw.circle(surface, (50, 50, 50), (int(width*0.8), int(height*0.8)), int(width*0.12))
+        
+    elif vtype == "bike":
+        # Frame
+        pygame.draw.line(surface, color, (width*0.25, height*0.6), (width*0.5, height*0.6), 5)
+        pygame.draw.line(surface, color, (width*0.5, height*0.6), (width*0.75, height*0.4), 5)
+        pygame.draw.line(surface, color, (width*0.25, height*0.6), (width*0.4, height*0.3), 5)
+        # Wheels
+        pygame.draw.circle(surface, (50, 50, 50), (int(width*0.25), int(height*0.6)), int(width*0.15), 5)
+        pygame.draw.circle(surface, (50, 50, 50), (int(width*0.75), int(height*0.6)), int(width*0.15), 5)
+        
+    elif vtype == "plane":
+        # Fuselage
+        pygame.draw.ellipse(surface, color, (width*0.1, height*0.35, width*0.8, height*0.3))
+        # Wings
+        pygame.draw.polygon(surface, (max(0, color[0]-30), max(0, color[1]-30), max(0, color[2]-30)), 
+                           [(width*0.4, height*0.45), (width*0.5, height*0.1), (width*0.6, height*0.45)])
+        # Tail
+        pygame.draw.polygon(surface, (max(0, color[0]-30), max(0, color[1]-30), max(0, color[2]-30)), 
+                           [(width*0.1, height*0.45), (width*0.1, height*0.2), (width*0.2, height*0.45)])
+                           
+    elif vtype == "helicopter":
+        # Cockpit
+        pygame.draw.ellipse(surface, color, (width*0.2, height*0.3, width*0.5, height*0.4))
+        # Tail
+        pygame.draw.rect(surface, color, (width*0.6, height*0.45, width*0.3, height*0.1))
+        # Rotors
+        pygame.draw.line(surface, (50, 50, 50), (width*0.45, height*0.3), (width*0.45, height*0.1), 3)
+        pygame.draw.line(surface, (200, 200, 200), (width*0.1, height*0.1), (width*0.8, height*0.1), 5)
+        
+    elif vtype == "boat":
+        # Hull
+        pygame.draw.polygon(surface, color, 
+                           [(width*0.1, height*0.4), (width*0.9, height*0.4), 
+                            (width*0.7, height*0.8), (width*0.3, height*0.8)])
+        # Cabin
+        pygame.draw.rect(surface, (255, 255, 255), (width*0.3, height*0.2, width*0.4, height*0.2))
+        # Mast/Flag
+        pygame.draw.line(surface, (100, 50, 0), (width*0.5, height*0.2), (width*0.5, height*0.05), 3)
+        
+    elif vtype == "ship":
+        # Hull
+        pygame.draw.polygon(surface, color, 
+                           [(width*0.05, height*0.4), (width*0.95, height*0.4), 
+                            (width*0.8, height*0.8), (width*0.2, height*0.8)])
+        # Decks
+        pygame.draw.rect(surface, (240, 240, 240), (width*0.2, height*0.25, width*0.6, height*0.15))
+        pygame.draw.rect(surface, (240, 240, 240), (width*0.3, height*0.15, width*0.4, height*0.1))
+        # Smokestacks
+        pygame.draw.rect(surface, (50, 50, 50), (width*0.4, height*0.05, width*0.08, height*0.1))
+        pygame.draw.rect(surface, (50, 50, 50), (width*0.55, height*0.05, width*0.08, height*0.1))
+        
+    elif vtype == "train":
+        # Engine body
+        pygame.draw.rect(surface, color, (width*0.1, height*0.3, width*0.6, height*0.4))
+        # Cab
+        pygame.draw.rect(surface, (max(0, color[0]-40), max(0, color[1]-40), max(0, color[2]-40)), 
+                        (width*0.7, height*0.2, width*0.2, height*0.5))
+        # Chimney
+        pygame.draw.rect(surface, (50, 50, 50), (width*0.2, height*0.1, width*0.1, height*0.2))
+        # Wheels
+        pygame.draw.circle(surface, (50, 50, 50), (int(width*0.25), int(height*0.8)), int(width*0.12))
+        pygame.draw.circle(surface, (50, 50, 50), (int(width*0.5), int(height*0.8)), int(width*0.12))
+        pygame.draw.circle(surface, (50, 50, 50), (int(width*0.8), int(height*0.8)), int(width*0.12))
+        
+    else:
+        # Default box fallback
+        pygame.draw.rect(surface, color, (width*0.1, height*0.1, width*0.8, height*0.8), border_radius=10)
+        
+    return surface
 def create_vehicle_image(vehicle_type, color, size=(150, 150)):
     """Load vehicle image from file, or create using pygame drawing as fallback"""
     # Try to load from file first

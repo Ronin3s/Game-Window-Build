@@ -4,7 +4,7 @@ Players drag vehicles to their correct environments (air, land, sea)
 """
 import pygame
 import random
-from utils import SparkleEffect, ShakeAnimation, create_vehicle_image, draw_text, resource_path
+from utils import SparkleEffect, ShakeAnimation, ConfettiEffect, create_vehicle_image, draw_text, resource_path, load_sound, create_button
 
 class EnvironmentZone:
     """An environment zone where vehicles can be placed"""
@@ -160,13 +160,9 @@ class Level2:
         self.error_sound = error_sound
         self.complete_sound = complete_sound
         
-        # Load background
-        try:
-            self.background = pygame.image.load(resource_path('assets/images/level2_bg.png'))
-            self.background = pygame.transform.scale(self.background, (self.width, self.height))
-        except:
-            self.background = pygame.Surface((self.width, self.height))
-            self.background.fill((255, 253, 208))  # Pastel yellow
+        # Load background - Solid pastel color as requested
+        self.background = pygame.Surface((self.width, self.height))
+        self.background.fill((255, 253, 208))  # Pastel yellow
         
         # Create environment zones
         zone_width = 280
@@ -202,16 +198,48 @@ class Level2:
         self.completion_timer = 0
         self.confetti = None
         
+        # Load specific level complete sound
+        self.level_complete_sound = load_sound(resource_path('assets/sounds/level2_complete.wav'))
+            
+        # Success Screen Elements (Arabic Images)
+        from utils import load_arabic_image
+        
+        self.next_button = load_arabic_image('go-to-the-next-level.png', (250, 80))
+        if not self.next_button:
+            self.next_button = create_button("Next Level", 0, 0, 200, 80, (50, 200, 50), font_size=30)
+        self.next_button_rect = pygame.Rect((self.width - 250) // 2, self.height // 2 + 150, 250, 80)
+
+        self.restart_button = load_arabic_image('try-agin.png', (200, 80))
+        if not self.restart_button:
+            self.restart_button = create_button("Restart", 0, 0, 200, 80, (200, 50, 50), font_size=30)
+        self.restart_button_rect = pygame.Rect((self.width - 200) // 2, self.height // 2 + 250, 200, 80)
+        # Create draggable vehicles
+        # Increase size for kids view (was 80, now 100)
         random.shuffle(vehicle_data)
         
+        # Grid Layout: All objects fixed below the title
+        self.vehicles = []
+        
+        # 8 vehicles total. 2 rows of 4.
+        # Title is at y=50, so position vehicles below it
+        start_x = 200
+        start_y = 120 # Below the title "Sort Vehicles to their Environments"
+        
         for i, (vtype, color) in enumerate(vehicle_data):
-            vehicle_img = create_vehicle_image(vtype, color, (100, 100)) # Keep draggable slightly smaller than full size
-            # Position vehicles in two rows at the top, well above the zones
-            row = i // 4  # 4 vehicles per row
+            # Create at larger size
+            raw_img = create_vehicle_image(vtype, color, (150, 150))
+            vehicle_img = pygame.transform.scale(raw_img, (100, 100))
+            
+            row = i // 4
             col = i % 4
-            x = 200 + col * 180  # Better spacing for 1024 width
-            y = 50 + row * 110    # Two rows with proper spacing
+            
+            x = start_x + col * 220
+            y = start_y + row * 110
+            
             vehicle = DraggableVehicle2(vehicle_img, x, y, vtype)
+            # Store initial pos for resetting if dropped in wrong place
+            vehicle.initial_x = x
+            vehicle.initial_y = y
             self.vehicles.append(vehicle)
         
         self.dragging_vehicle = None
@@ -222,6 +250,11 @@ class Level2:
     def handle_event(self, event):
         """Handle mouse events"""
         if self.completed:
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if self.next_button_rect.collidepoint(event.pos):
+                    return True
+                elif self.restart_button_rect.collidepoint(event.pos):
+                    return "restart"
             return False
         
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -287,17 +320,23 @@ class Level2:
         """Update animations and check completion"""
         for vehicle in self.vehicles:
             vehicle.update()
+            # If placed, it stays placed (or disappears? usually stays in zone)
+            # In original logic, they stayed.
         
         self.sparkles = [s for s in self.sparkles if s.update()]
         
-        if self.vehicles_placed >= self.total_vehicles and not self.completed:
+        # Check completion
+        # Count placed vehicles
+        placed_count = sum(1 for v in self.vehicles if v.placed)
+        
+        if placed_count >= self.total_vehicles and not self.completed:
             self.completed = True
             self.completion_timer = pygame.time.get_ticks()
-            if self.complete_sound:
-                self.complete_sound.play()
+            if self.level_complete_sound:
+                self.level_complete_sound.play()
         
-        if self.completed and pygame.time.get_ticks() - self.completion_timer > 2000:
-            return True
+        # if self.completed and pygame.time.get_ticks() - self.completion_timer > 2000:
+        #     return True
         
         return False
     
@@ -321,13 +360,15 @@ class Level2:
             sparkle.draw(self.screen)
         
         # Draw completion message
+        # Draw completion message
         if self.completed:
-            draw_text(self.screen, "Excellent!", 72, self.width // 2, self.height // 2 - 100, (255, 215, 0))
-            for i in range(5):
-                x = self.width // 2 - 100 + i * 50
-                y = self.height // 2 - 30
-                pygame.draw.polygon(self.screen, (255, 215, 0), [
-                    (x, y - 15), (x + 5, y), (x + 20, y), (x + 8, y + 10),
-                    (x + 12, y + 25), (x, y + 15), (x - 12, y + 25),
-                    (x - 8, y + 10), (x - 20, y), (x - 5, y)
-                ])
+            # Draw semi-transparent overlay
+            overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 150))
+            self.screen.blit(overlay, (0, 0))
+            
+            draw_text(self.screen, "Level 2 Complete!", 60, self.width // 2, self.height // 2 - 50, (50, 200, 50))
+            draw_text(self.screen, "Environment Sorted!", 40, self.width // 2, self.height // 2 + 20, (255, 215, 0))
+            
+            self.screen.blit(self.next_button, self.next_button_rect)
+            self.screen.blit(self.restart_button, self.restart_button_rect)

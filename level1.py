@@ -4,7 +4,7 @@ Players drag transportation images to match their shadows
 """
 import pygame
 import random
-from utils import SparkleEffect, ShakeAnimation, create_shadow, create_vehicle_image, draw_text, resource_path
+from utils import SparkleEffect, ShakeAnimation, create_shadow, create_vehicle_image, draw_text, resource_path, load_sound, create_button
 
 class DraggableVehicle:
     """A vehicle that can be dragged"""
@@ -78,13 +78,9 @@ class Level1:
         self.error_sound = error_sound
         self.complete_sound = complete_sound
         
-        # Load background
-        try:
-            self.background = pygame.image.load(resource_path('assets/images/level1_bg.png'))
-            self.background = pygame.transform.scale(self.background, (self.width, self.height))
-        except:
-            self.background = pygame.Surface((self.width, self.height))
-            self.background.fill((173, 216, 230))  # Pastel blue
+        # Load background - Solid pastel color as requested
+        self.background = pygame.Surface((self.width, self.height))
+        self.background.fill((173, 216, 230))  # Pastel blue
         
         # Vehicle definitions
         vehicle_types = [
@@ -103,34 +99,89 @@ class Level1:
         self.shadows = []
         self.sparkles = []
         
-        # Randomize positions
-        random.shuffle(vehicle_types)
+        # Load specific level complete sound and images
+        self.level_complete_sound = load_sound(resource_path('assets/sounds/level1_complete.wav'))
         
-        # Create 8 vehicles in two rows
-        for i, (vtype, color) in enumerate(vehicle_types):
-            # Create vehicle image (larger)
-            vehicle_img = create_vehicle_image(vtype, color, (120, 120))
+        # Success Screen Elements (Arabic Images)
+        from utils import load_arabic_image
+        
+        self.next_button = load_arabic_image('go-to-the-next-level.png', (250, 80))
+        if not self.next_button:
+            self.next_button = create_button("Next Level", 0, 0, 200, 80, (50, 200, 50), font_size=30)
+        self.next_button_rect = pygame.Rect((self.width - 250) // 2, self.height // 2 + 150, 250, 80)
+
+        self.restart_button = load_arabic_image('try-agin.png', (200, 80))
+        if not self.restart_button:
+            self.restart_button = create_button("Restart", 0, 0, 200, 80, (200, 50, 50), font_size=30)
+        self.restart_button_rect = pygame.Rect((self.width - 200) // 2, self.height // 2 + 250, 200, 80)
+
+        # Randomize order of vehicle types for initial display
+        # random.shuffle(vehicle_types) # Keep fixed order for alignment as requested
+        
+        # Calculate positions for images and shadows
+        num_vehicles = len(vehicle_types)
+        
+        # Adjust size to fit all 8 in one column
+        # Window is 1280x800.
+        # 90px was too big (overflowed).
+        # 80px * 8 = 640. + 8px * 7 = 56. Total = 696.
+        # 800 - 696 = 104px slack. Perfect.
+        display_size = 80
+        
+        # Define column parameters
+        column_gap = 450 # Wider gap for wider screen
+        
+        # Calculate the starting X position for the left column
+        total_cols_width = (display_size * 2) + column_gap
+        start_x_left_column = (self.width - total_cols_width) // 2
+        start_x_right_column = start_x_left_column + display_size + column_gap
+        
+        # Vertical spacing
+        vertical_spacing = 8
+        
+        # Calculate start y for vertical centering
+        # Ensure it starts below the title (y=50)
+        total_column_height = (num_vehicles * display_size) + ((num_vehicles - 1) * vertical_spacing)
+        start_y = max(80, (self.height - total_column_height) // 2)
+        
+        # Create indices for left (vehicles) and right (shadows) columns
+        # Shuffle left column to add randomness as requested
+        left_indices = list(range(num_vehicles))
+        random.shuffle(left_indices)
+        
+        # Keep right column fixed (or shuffle independently if desired, but fixed is good for stability)
+        right_indices = list(range(num_vehicles))
+        
+        # Create Vehicles (Left Column)
+        for row, v_idx in enumerate(left_indices):
+            vtype, color = vehicle_types[v_idx]
             
-            # Position vehicles on left side (adjusted for 1024x768)
-            row = i // 4
-            col = i % 4
-            x = 50 + col * 110  # Reduced spacing to fit
-            y = 200 + row * 200
-            vehicle = DraggableVehicle(vehicle_img, x, y, i)
+            # Create at default size then scale
+            raw_img = create_vehicle_image(vtype, color, (120, 120))
+            vehicle_img = pygame.transform.scale(raw_img, (display_size, display_size))
+            
+            x_main = start_x_left_column
+            y_main = start_y + row * (display_size + vertical_spacing)
+            
+            # Pass v_idx as the ID so it matches the shadow with the same v_idx
+            vehicle = DraggableVehicle(vehicle_img, x_main, y_main, v_idx)
             self.vehicles.append(vehicle)
             
-            # Create shadow and position on right side
+        # Create Shadows (Right Column)
+        for row, s_idx in enumerate(right_indices):
+            vtype, color = vehicle_types[s_idx]
+            
+            # Create shadow from the vehicle image
+            raw_img = create_vehicle_image(vtype, color, (120, 120))
+            vehicle_img = pygame.transform.scale(raw_img, (display_size, display_size))
             shadow_img = create_shadow(vehicle_img, vtype)
-            shadow_x = 550 + col * 110  # Reduced spacing to fit
-            shadow_y = 200 + row * 200
-            shadow = ShadowSlot(shadow_img, shadow_x, shadow_y, i)
+            
+            x_shadow = start_x_right_column
+            y_shadow = start_y + row * (display_size + vertical_spacing)
+            
+            # Pass s_idx as the ID
+            shadow = ShadowSlot(shadow_img, x_shadow, y_shadow, s_idx)
             self.shadows.append(shadow)
-        
-        # Shuffle shadow positions
-        shadow_positions = [(s.rect.x, s.rect.y) for s in self.shadows]
-        random.shuffle(shadow_positions)
-        for shadow, pos in zip(self.shadows, shadow_positions):
-            shadow.rect.topleft = pos
         
         self.dragging_vehicle = None
         self.matches_found = 0
@@ -141,6 +192,11 @@ class Level1:
     def handle_event(self, event):
         """Handle mouse events for dragging"""
         if self.completed:
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if self.next_button_rect.collidepoint(event.pos):
+                    return True
+                elif self.restart_button_rect.collidepoint(event.pos):
+                    return "restart"
             return False
         
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -201,15 +257,16 @@ class Level1:
         self.sparkles = [s for s in self.sparkles if s.update()]
         
         # Check completion
+        # Check completion
         if self.matches_found >= self.total_matches and not self.completed:
             self.completed = True
             self.completion_timer = pygame.time.get_ticks()
-            if self.complete_sound:
-                self.complete_sound.play()
+            if self.level_complete_sound:
+                self.level_complete_sound.play()
         
         # Return True when ready to move to next level
-        if self.completed and pygame.time.get_ticks() - self.completion_timer > 2000:
-            return True
+        # if self.completed and pygame.time.get_ticks() - self.completion_timer > 2000:
+        #     return True
         
         return False
     
@@ -233,14 +290,24 @@ class Level1:
             sparkle.draw(self.screen)
         
         # Draw completion message
+        # Draw completion message
         if self.completed:
-            draw_text(self.screen, "Well Done!", 72, self.width // 2, self.height // 2, (255, 215, 0))
-            # Draw stars
-            for i in range(5):
-                x = self.width // 2 - 100 + i * 50
-                y = self.height // 2 + 60
-                pygame.draw.polygon(self.screen, (255, 215, 0), [
-                    (x, y - 15), (x + 5, y), (x + 20, y), (x + 8, y + 10),
-                    (x + 12, y + 25), (x, y + 15), (x - 12, y + 25),
-                    (x - 8, y + 10), (x - 20, y), (x - 5, y)
-                ])
+            # Draw semi-transparent overlay
+            overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 150))
+            self.screen.blit(overlay, (0, 0))
+            
+            # Load and display Level 1 Complete Arabic image
+            from utils import load_arabic_image
+            level_complete_img = load_arabic_image('level-1-complet.png', (600, 100))
+            
+            if level_complete_img:
+                img_rect = level_complete_img.get_rect(center=(self.width // 2, self.height // 2 - 50))
+                self.screen.blit(level_complete_img, img_rect)
+            else:
+                # Fallback to English text
+                draw_text(self.screen, "Level 1 Complete!", 60, self.width // 2, self.height // 2 - 50, (50, 200, 50))
+                draw_text(self.screen, "Great Job!", 40, self.width // 2, self.height // 2 + 20, (255, 215, 0))
+            
+            self.screen.blit(self.next_button, self.next_button_rect)
+            self.screen.blit(self.restart_button, self.restart_button_rect)
