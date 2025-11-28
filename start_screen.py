@@ -22,11 +22,11 @@ class StartScreen:
                 pygame.draw.line(self.background, (100, color_value, 255), (0, i), (self.width, i))
         
         # Create start button
-        self.button_width = 200
-        self.button_height = 80
+        self.button_width = 300
+        self.button_height = 100
         self.button_x = (self.width - self.button_width) // 2
         self.button_y = (self.height - self.button_height) // 2 + 100
-        self.button = create_button("Start Game", 0, 0, self.button_width, self.button_height, (50, 200, 50))
+        self.button = create_button("Start Game", 0, 0, self.button_width, self.button_height, (50, 200, 50), font_size=40)
         self.button_rect = pygame.Rect(self.button_x, self.button_y, self.button_width, self.button_height)
         
         # Hover effect

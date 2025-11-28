@@ -131,17 +131,28 @@ def play_sound(sound):
 
 def get_font(size):
     """Get a font, trying bundled, then system, then default."""
+    # Helper to test font
+    def test_font(f):
+        try:
+            f.render("test", True, (255, 255, 255))
+            return True
+        except Exception:
+            return False
+
     # 1. Try bundled font
     try:
         bundled_font_path = resource_path("assets/fonts/DejaVuSans.ttf")
         if os.path.exists(bundled_font_path):
-            return pygame.font.Font(bundled_font_path, size)
+            font = pygame.font.Font(bundled_font_path, size)
+            if test_font(font):
+                return font
     except Exception as e:
         print(f"Could not load bundled font: {e}")
 
     # 2. Try common system fonts
     font_paths = [
         # Linux
+        "/usr/share/fonts/X11/TTF/luxisr.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
         "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
         "/usr/share/fonts/truetype/msttcorefonts/Arial.ttf",
@@ -154,14 +165,17 @@ def get_font(size):
     for path in font_paths:
         if os.path.exists(path):
             try:
-                return pygame.font.Font(path, size)
-            except Exception as e:
-                print(f"Could not load system font '{path}': {e}")
+                font = pygame.font.Font(path, size)
+                if test_font(font):
+                    return font
+            except Exception:
                 continue
     
     # 3. Try pygame's default font
     try:
-        return pygame.font.Font(None, size)
+        font = pygame.font.Font(None, size)
+        if test_font(font):
+            return font
     except Exception as e:
         print(f"Could not load pygame's default font: {e}")
 
@@ -172,13 +186,13 @@ def render_text(text, font, color):
     """Render text."""
     return font.render(text, True, color)
 
-def create_button(text, x, y, width, height, color, text_color=WHITE):
+def create_button(text, x, y, width, height, color, text_color=WHITE, font_size=48):
     """Create a simple button surface"""
     button = pygame.Surface((width, height))
     button.fill(color)
     pygame.draw.rect(button, WHITE, button.get_rect(), 3)
     
-    font = get_font(48)
+    font = get_font(font_size)
     text_surf = render_text(text, font, text_color)
     text_rect = text_surf.get_rect(center=(width//2, height//2))
     button.blit(text_surf, text_rect)
