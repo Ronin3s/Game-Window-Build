@@ -6,9 +6,16 @@ class Dashboard:
         self.screen = screen
         self.width, self.height = screen.get_size()
         
-        # Load background - Solid pastel color as requested
-        self.background = pygame.Surface((self.width, self.height))
-        self.background.fill((50, 50, 100)) # Dark blue/purple for dashboard
+        # Load background - same as start screen
+        try:
+            self.background = pygame.image.load(resource_path('assets/images/start_background.png'))
+            self.background = pygame.transform.scale(self.background, (self.width, self.height))
+        except:
+            # Fallback: create a colorful gradient background
+            self.background = pygame.Surface((self.width, self.height))
+            for i in range(self.height):
+                color_value = int(150 + (i / self.height) * 105)
+                pygame.draw.line(self.background, (100, color_value, 255), (0, i), (self.width, i))
             
         # Load Checkmark
         try:
