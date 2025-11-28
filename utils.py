@@ -127,26 +127,11 @@ def play_sound(sound):
     if sound:
         sound.play()
 
-# Try to import Arabic support libraries
-try:
-    import arabic_reshaper
-    from bidi.algorithm import get_display
-    ARABIC_SUPPORT = True
-except ImportError:
-    ARABIC_SUPPORT = False
-    print("Arabic support libraries not found. Text will not be reshaped.")
+
 
 def get_font(size):
-    """Get a font that supports Arabic"""
-    # Prefer bundled font
-    bundled_font = resource_path("assets/fonts/NotoSansArabic-Regular.ttf")
-    if os.path.exists(bundled_font):
-        try:
-            return pygame.font.Font(bundled_font, size)
-        except Exception as e:
-            print(f"Error loading bundled font '{bundled_font}': {e}")
-
-    # If bundled font fails, try to find system fonts
+    """Get a font."""
+    # Try to find system fonts
     font_paths = [
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
         "/usr/share/fonts/truetype/freefont/FreeSerif.ttf",
@@ -161,18 +146,11 @@ def get_font(size):
                 continue
                 
     # Fallback to default
-    print("Warning: No suitable Arabic font found. Using default font.")
+    print("Warning: No suitable font found. Using default font.")
     return pygame.font.Font(None, size)
 
 def render_text(text, font, color):
-    """Render text with Arabic support"""
-    if ARABIC_SUPPORT:
-        try:
-            reshaped_text = arabic_reshaper.reshape(text)
-            bidi_text = get_display(reshaped_text)
-            return font.render(bidi_text, True, color)
-        except:
-            pass
+    """Render text."""
     return font.render(text, True, color)
 
 def create_button(text, x, y, width, height, color, text_color=WHITE):
