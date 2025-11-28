@@ -130,36 +130,43 @@ def play_sound(sound):
 
 
 def get_font(size):
-    """Get a font."""
-    # Prefer bundled font
-    bundled_font = resource_path("assets/fonts/DejaVuSans.ttf")
-    if os.path.exists(bundled_font):
-        try:
-            return pygame.font.Font(bundled_font, size)
-        except Exception as e:
-            print(f"Error loading bundled font '{bundled_font}': {e}")
+    """Get a font, trying bundled, then system, then default."""
+    # 1. Try bundled font
+    try:
+        bundled_font_path = resource_path("assets/fonts/DejaVuSans.ttf")
+        if os.path.exists(bundled_font_path):
+            return pygame.font.Font(bundled_font_path, size)
+    except Exception as e:
+        print(f"Could not load bundled font: {e}")
 
-    # If bundled font fails, try to find system fonts
+    # 2. Try common system fonts
     font_paths = [
+        # Linux
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
         "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
         "/usr/share/fonts/truetype/msttcorefonts/Arial.ttf",
-        "/usr/share/fonts/truetype/freefont/FreeSerif.ttf",
-        "arial.ttf",
+        # Windows
         "C:/Windows/Fonts/arial.ttf",
-        "C:/Windows/Fonts/cour.ttf"
+        "C:/Windows/Fonts/cour.ttf",
+        # MacOS
+        "/System/Library/Fonts/Supplemental/Arial.ttf",
     ]
-    
     for path in font_paths:
         if os.path.exists(path):
             try:
                 return pygame.font.Font(path, size)
-            except:
+            except Exception as e:
+                print(f"Could not load system font '{path}': {e}")
                 continue
-                
-    # Fallback to default
-    print(f"Warning: Could not find any of the specified fonts: {font_paths}. Using default font.")
-    return pygame.font.Font(None, size)
+    
+    # 3. Try pygame's default font
+    try:
+        return pygame.font.Font(None, size)
+    except Exception as e:
+        print(f"Could not load pygame's default font: {e}")
+
+    # 4. If all else fails, raise an error
+    raise RuntimeError("Could not load any font.")
 
 def render_text(text, font, color):
     """Render text."""
