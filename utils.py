@@ -131,7 +131,15 @@ def play_sound(sound):
 
 def get_font(size):
     """Get a font."""
-    # Try to find system fonts
+    # Prefer bundled font
+    bundled_font = resource_path("assets/fonts/DejaVuSans.ttf")
+    if os.path.exists(bundled_font):
+        try:
+            return pygame.font.Font(bundled_font, size)
+        except Exception as e:
+            print(f"Error loading bundled font '{bundled_font}': {e}")
+
+    # If bundled font fails, try to find system fonts
     font_paths = [
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
         "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
