@@ -134,8 +134,12 @@ def get_font(size):
     # Try to find system fonts
     font_paths = [
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/truetype/msttcorefonts/Arial.ttf",
         "/usr/share/fonts/truetype/freefont/FreeSerif.ttf",
-        "arial.ttf"
+        "arial.ttf",
+        "C:/Windows/Fonts/arial.ttf",
+        "C:/Windows/Fonts/cour.ttf"
     ]
     
     for path in font_paths:
@@ -146,7 +150,7 @@ def get_font(size):
                 continue
                 
     # Fallback to default
-    print("Warning: No suitable font found. Using default font.")
+    print(f"Warning: Could not find any of the specified fonts: {font_paths}. Using default font.")
     return pygame.font.Font(None, size)
 
 def render_text(text, font, color):
